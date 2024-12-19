@@ -22,7 +22,6 @@ class RecordController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        // Determine if it's a shortlist or longlist based on NID length
         if (strlen($request->NID) === 4 && ctype_digit($request->NID)) {
             $record = new Longlist();
         } else {
@@ -40,7 +39,7 @@ class RecordController extends Controller
     public function search(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'searchTerm' => 'required|string|max:255',
+            'searchTerm' => 'required|string|max:255', // TODO: Figure out a better name for this
         ]);
 
         if ($validator->fails()) {
