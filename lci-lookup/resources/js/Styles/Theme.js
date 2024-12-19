@@ -1,5 +1,3 @@
-import { createGlobalStyle } from 'styled-components';
-
 export const lightTheme = {
   body: '#ffffff',
   text: '#333333',
@@ -18,35 +16,9 @@ export const darkTheme = {
   font: "'Open Sans', sans-serif",
 };
 
-export const GlobalStyles = createGlobalStyle`
-  body {
-    background: ${({ theme }) => theme.body};
-    color: ${({ theme }) => theme.text};
-    font-family: ${({ theme }) => theme.font};
-    transition: all 0.3s linear;
-  }
-
-  a {
-    color: ${({ theme }) => theme.primary};
-    text-decoration: none;
-  }
-
-  button {
-    background: ${({ theme }) => theme.primary};
-    color: ${({ theme }) => theme.body};
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: ${({ theme }) => theme.secondary};
-    }
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    color: ${({ theme }) => theme.primary};
-  }
-`; 
+export const applyGlobalStyles = () => {
+  document.body.style.background = lightTheme.body;
+  document.body.style.color = lightTheme.text;
+  document.body.style.fontFamily = lightTheme.font;
+  document.body.style.transition = 'all 0.3s linear';
+};

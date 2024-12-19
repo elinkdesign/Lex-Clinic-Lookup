@@ -1,88 +1,131 @@
 import React from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { lightTheme } from '../Styles/Theme';
 
 const styles: { [key: string]: React.CSSProperties } = {
-  header: {
-    backgroundColor: lightTheme.primary,
-    padding: '1rem 0',
-  },
-  headerContent: {
-    maxWidth: '1200px',
-    margin: '0 auto',
+  container: {
     display: 'flex',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    padding: '2rem',
+    backgroundColor: lightTheme.body,
   },
-  logo: {
-    color: lightTheme.body,
-    margin: 0,
+  title: {
+    fontSize: '2.5rem',
+    color: lightTheme.primary,
+    marginBottom: '2rem',
   },
-  navUl: {
-    listStyleType: 'none',
-    padding: 0,
+  form: {
     display: 'flex',
-    gap: '1rem',
-  },
-  navA: {
-    color: lightTheme.body,
-    textDecoration: 'none',
-    fontWeight: 'bold',
-  },
-  main: {
-    maxWidth: '1200px',
-    margin: '2rem auto',
-    padding: '0 1rem',
-  },
-  footer: {
-    backgroundColor: lightTheme.accent,
-    color: lightTheme.text,
-    textAlign: 'center',
-    padding: '1rem 0',
-    position: 'absolute',
-    bottom: 0,
+    flexDirection: 'column',
     width: '100%',
+    maxWidth: '400px',
+    gap: '1.5rem',
+  },
+  inputGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  label: {
+    marginBottom: '0.5rem',
+    color: lightTheme.text,
+    fontSize: '1rem',
+  },
+  input: {
+    padding: '0.75rem',
+    fontSize: '1rem',
+    border: `1px solid ${lightTheme.accent}`,
+    borderRadius: '4px',
+    backgroundColor: '#ffffff',
+  },
+  button: {
+    padding: '0.75rem',
+    fontSize: '1rem',
+    backgroundColor: lightTheme.primary,
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'background-color 0.3s ease',
+  },
+  error: {
+    color: 'red',
+    fontSize: '0.875rem',
+    marginTop: '0.25rem',
+  },
+  message: {
+    marginTop: '1rem',
+    padding: '0.5rem',
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    borderRadius: '4px',
+    textAlign: 'center',
   },
 };
 
 interface WelcomeProps {
-  auth: {
-    user: any;
-  };
+  message?: string;
 }
 
-export default function Welcome({ auth }: WelcomeProps) {
+export default function Welcome({ message }: WelcomeProps) {
+  const { data, setData, post, processing, errors } = useForm({
+    NID: '',
+    LIC: '',
+    name: '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    post('/submit-record');
+  };
+
   return (
     <>
-      <Head title="Welcome" />
-      <header style={styles.header}>
-        <div style={styles.headerContent}>
-          <h1 style={styles.logo}>LCI Lookup</h1>
-          <nav>
-            <ul style={styles.navUl}>
-              <li><a href="#" style={styles.navA}>Home</a></li>
-              <li><a href="#" style={styles.navA}>Services</a></li>
-              <li><a href="#" style={styles.navA}>About</a></li>
-              <li><a href="#" style={styles.navA}>Contact</a></li>
-              {auth.user ? (
-                <li><a href={route('dashboard')} style={styles.navA}>Dashboard</a></li>
-              ) : (
-                <>
-                  <li><a href={route('login')} style={styles.navA}>Log in</a></li>
-                  <li><a href={route('register')} style={styles.navA}>Register</a></li>
-                </>
-              )}
-            </ul>
-          </nav>
-        </div>
-      </header>
-      <main style={styles.main}>
-        <h2>Welcome to LCI Lookup</h2>
-        <p>This is a placeholder for your main content. You can add more sections, images, and other components here.</p>
-      </main>
-      <footer style={styles.footer}>
-        <p>&copy; 2023 LCI Lookup. All rights reserved.</p>
-      </footer>
+      <Head title="NID Lookup" />
+      <div style={styles.container}>
+        <h1 style={styles.title}>NID Lookup</h1>
+        {message && <div style={styles.message}>{message}</div>}
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.inputGroup}>
+            <label htmlFor="NID" style={styles.label}>NID</label>
+            <input
+              type="text"
+              id="NID"
+              value={data.NID}
+              onChange={e => setData('NID', e.target.value)}
+              style={styles.input}
+            />
+            {errors.NID && <div style={styles.error}>{errors.NID}</div>}
+          </div>
+          <div style={styles.inputGroup}>
+            <label htmlFor="LIC" style={styles.label}>LIC</label>
+            <input
+              type="text"
+              id="LIC"
+              value={data.LIC}
+              onChange={e => setData('LIC', e.target.value)}
+              style={styles.input}
+            />
+            {errors.LIC && <div style={styles.error}>{errors.LIC}</div>}
+          </div>
+          <div style={styles.inputGroup}>
+            <label htmlFor="name" style={styles.label}>Name</label>
+            <input
+              type="text"
+              id="name"
+              value={data.name}
+              onChange={e => setData('name', e.target.value)}
+              style={styles.input}
+            />
+            {errors.name && <div style={styles.error}>{errors.name}</div>}
+          </div>
+          <button type="submit" style={styles.button} disabled={processing}>
+            Submit
+          </button>
+        </form>
+      </div>
     </>
   );
 }
