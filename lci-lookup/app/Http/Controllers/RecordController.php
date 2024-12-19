@@ -36,4 +36,31 @@ class RecordController extends Controller
 
         return Inertia::render('Welcome', ['message' => 'Record saved successfully']);
     }
+
+    public function search(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'searchTerm' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $searchTerm = $request->input('searchTerm');
+
+        $shortlistResults = Shortlist::where('NID', 'LIKE', "%{$searchTerm}%")
+            ->orWhere('LIC', 'LIKE', "%{$searchTerm}%")
+            ->orWhere('name', 'LIKE', "%{$searchTerm}%")
+            ->get();
+
+        $longlistResults = Longlist::where('NID', 'LIKE', "%{$searchTerm}%")
+            ->orWhere('LIC', 'LIKE', "%{$searchTerm}%")
+            ->orWhere('name', 'LIKE', "%{$searchTerm}%")
+            ->get();
+
+        $results = $shortlistResults->concat($longlistResults);
+
+        return response()->json(['results' => $results]);
+    }
 }

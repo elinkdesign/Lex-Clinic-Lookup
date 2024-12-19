@@ -26,5 +26,6 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::post('/submit-record', [RecordController::class, 'store'])->name('record.store');
+Route::post('/search', [RecordController::class, 'search'])->name('record.search');
 
 require __DIR__.'/auth.php';

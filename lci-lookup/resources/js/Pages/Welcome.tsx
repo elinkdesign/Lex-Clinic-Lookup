@@ -1,131 +1,108 @@
-import React from 'react';
-import { Head, useForm } from '@inertiajs/react';
-import { lightTheme } from '../Styles/Theme';
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    padding: '2rem',
-    backgroundColor: lightTheme.body,
-  },
-  title: {
-    fontSize: '2.5rem',
-    color: lightTheme.primary,
-    marginBottom: '2rem',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: '100%',
-    maxWidth: '400px',
-    gap: '1.5rem',
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  label: {
-    marginBottom: '0.5rem',
-    color: lightTheme.text,
-    fontSize: '1rem',
-  },
-  input: {
-    padding: '0.75rem',
-    fontSize: '1rem',
-    border: `1px solid ${lightTheme.accent}`,
-    borderRadius: '4px',
-    backgroundColor: '#ffffff',
-  },
-  button: {
-    padding: '0.75rem',
-    fontSize: '1rem',
-    backgroundColor: lightTheme.primary,
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    transition: 'background-color 0.3s ease',
-  },
-  error: {
-    color: 'red',
-    fontSize: '0.875rem',
-    marginTop: '0.25rem',
-  },
-  message: {
-    marginTop: '1rem',
-    padding: '0.5rem',
-    backgroundColor: '#4CAF50',
-    color: 'white',
-    borderRadius: '4px',
-    textAlign: 'center',
-  },
-};
+import React, { useState } from 'react';
+import { Head } from '@inertiajs/react';
+import SearchModal from '../Components/SearchModal';
+import '../Styles/Welcome.css';
+import { submitRecord } from '../Services/api';
+import { FormData, Errors } from '../types';
 
 interface WelcomeProps {
   message?: string;
 }
 
-export default function Welcome({ message }: WelcomeProps) {
-  const { data, setData, post, processing, errors } = useForm({
+export default function Welcome({ message: initialMessage }: WelcomeProps) {
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
     NID: '',
     LIC: '',
     name: '',
   });
+  const [message, setMessage] = useState(initialMessage);
+  const [errors, setErrors] = useState<Errors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prevData => ({ ...prevData, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    post('/submit-record');
+    setErrors({});
+    setIsSubmitting(true);
+
+    try {
+      const responseMessage = await submitRecord(formData);
+      setMessage(responseMessage);
+      setFormData({ NID: '', LIC: '', name: '' });
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.errors) {
+        setErrors(error.response.data.errors);
+      } else {
+        setMessage('An error occurred. Please try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <>
       <Head title="NID Lookup" />
-      <div style={styles.container}>
-        <h1 style={styles.title}>NID Lookup</h1>
-        {message && <div style={styles.message}>{message}</div>}
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label htmlFor="NID" style={styles.label}>NID</label>
+      <div className="container">
+        <button 
+          className="search-button"
+          onClick={() => setIsSearchModalOpen(true)}
+        >
+          Search
+        </button>
+        <h1 className="title">NID Lookup</h1>
+        {message && <div className="message">{message}</div>}
+        <form onSubmit={handleSubmit} className="form">
+          <div className="input-group">
+            <label htmlFor="NID" className="label">NID</label>
             <input
               type="text"
               id="NID"
-              value={data.NID}
-              onChange={e => setData('NID', e.target.value)}
-              style={styles.input}
+              name="NID"
+              value={formData.NID}
+              onChange={handleInputChange}
+              className="input"
             />
-            {errors.NID && <div style={styles.error}>{errors.NID}</div>}
+            {errors.NID && <div className="error">{errors.NID}</div>}
           </div>
-          <div style={styles.inputGroup}>
-            <label htmlFor="LIC" style={styles.label}>LIC</label>
+          <div className="input-group">
+            <label htmlFor="LIC" className="label">LIC</label>
             <input
               type="text"
               id="LIC"
-              value={data.LIC}
-              onChange={e => setData('LIC', e.target.value)}
-              style={styles.input}
+              name="LIC"
+              value={formData.LIC}
+              onChange={handleInputChange}
+              className="input"
             />
-            {errors.LIC && <div style={styles.error}>{errors.LIC}</div>}
+            {errors.LIC && <div className="error">{errors.LIC}</div>}
           </div>
-          <div style={styles.inputGroup}>
-            <label htmlFor="name" style={styles.label}>Name</label>
+          <div className="input-group">
+            <label htmlFor="name" className="label">Name</label>
             <input
               type="text"
               id="name"
-              value={data.name}
-              onChange={e => setData('name', e.target.value)}
-              style={styles.input}
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              className="input"
             />
-            {errors.name && <div style={styles.error}>{errors.name}</div>}
+            {errors.name && <div className="error">{errors.name}</div>}
           </div>
-          <button type="submit" style={styles.button} disabled={processing}>
+          <button type="submit" className="submit-button" disabled={isSubmitting}>
             Submit
           </button>
         </form>
       </div>
+      <SearchModal 
+        isOpen={isSearchModalOpen} 
+        onClose={() => setIsSearchModalOpen(false)} 
+      />
     </>
   );
 }
