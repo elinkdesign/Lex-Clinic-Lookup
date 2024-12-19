@@ -43,10 +43,10 @@ export default function Welcome({ message: initialMessage }: WelcomeProps) {
     } finally {
       setIsSubmitting(false);
     }
-  };
+    };
 
-  return (
-    <>
+    return (
+        <>
       <Head title="NID Lookup" />
       <div className="container">
         <button 
@@ -69,7 +69,7 @@ export default function Welcome({ message: initialMessage }: WelcomeProps) {
               className="input"
             />
             {errors.NID && <div className="error">{errors.NID}</div>}
-          </div>
+                            </div>
           <div className="input-group">
             <label htmlFor="LIC" className="label">LIC</label>
             <input
@@ -81,7 +81,7 @@ export default function Welcome({ message: initialMessage }: WelcomeProps) {
               className="input"
             />
             {errors.LIC && <div className="error">{errors.LIC}</div>}
-          </div>
+                                    </div>
           <div className="input-group">
             <label htmlFor="name" className="label">Name</label>
             <input
@@ -93,16 +93,16 @@ export default function Welcome({ message: initialMessage }: WelcomeProps) {
               className="input"
             />
             {errors.name && <div className="error">{errors.name}</div>}
-          </div>
+                                            </div>
           <button type="submit" className="submit-button" disabled={isSubmitting}>
             Submit
           </button>
         </form>
-      </div>
+                                            </div>
       <SearchModal 
         isOpen={isSearchModalOpen} 
         onClose={() => setIsSearchModalOpen(false)} 
       />
-    </>
-  );
+        </>
+    );
 }
