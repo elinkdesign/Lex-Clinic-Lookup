@@ -38,6 +38,21 @@ export default function Login({
                 </div>
             )}
 
+            <div className="mb-6 text-center">
+                <Link
+                    href={route('windows.auth')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                    Sign in with Windows Authentication
+                </Link>
+            </div>
+            
+            <div className="mb-4 flex items-center">
+                <div className="flex-grow h-px bg-gray-300"></div>
+                <div className="mx-4 text-gray-500 text-sm">OR</div>
+                <div className="flex-grow h-px bg-gray-300"></div>
+            </div>
+
             <form onSubmit={submit}>
                 <div>
                     <InputLabel htmlFor="email" value="Email" />

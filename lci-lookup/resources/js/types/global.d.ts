@@ -15,3 +15,12 @@ declare global {
 declare module '@inertiajs/core' {
     interface PageProps extends InertiaPageProps, AppPageProps {}
 }
+
+declare module '@inertiajs/react' {
+    export function usePage<T = Record<string, unknown>>(): {
+        props: PageProps<T>;
+        url: string;
+        component: string;
+        version: string | null;
+    };
+}

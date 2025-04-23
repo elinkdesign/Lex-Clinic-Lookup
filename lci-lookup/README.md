@@ -7,6 +7,7 @@ The LCI Lookup Tool is an internal web application for managing and searching NI
 - Submit new records with NID, LIC, and Name
 - Search records by NID, LIC, or Name
 - Display search results from both Shortlist and Longlist databases
+- LDAP/Active Directory authentication for secure access
 
 ## Usage
 
@@ -45,95 +46,108 @@ If you need to make changes to the application:
 3. Test thoroughly before deploying to production.
 4. If database changes are required, create and test migrations carefully.
 
-## Deployment on IIS Windows Server
+## Deployment on IIS with LDAP Authentication
 
-To deploy this Laravel application on an IIS Windows server, some modifications and additional steps are required:
+To deploy this Laravel application on an IIS Windows server with LDAP/Active Directory authentication, follow these steps:
 
-1. Ensure IIS is installed and configured on your Windows server.
-2. Install PHP for IIS. You can download it from the official PHP website.
-3. Install Composer on the server if it's not already installed.
-4. Install the URL Rewrite module for IIS.
-5. Clone or copy the application files to a directory on the server (e.g., C:\inetpub\wwwroot\lci-lookup).
-6. Open a command prompt, navigate to the application directory, and run:
+### Prerequisites
 
-   ```
-   composer install --no-dev
-   ```
-7. Copy the `.env.example` file to `.env` and update it with your server's database credentials and other configuration settings.
-8. Generate the application key:
+1. Windows Server with IIS installed (IIS 10 or later recommended)
+2. PHP 8.2 or later installed and configured for IIS
+3. URL Rewrite module for IIS
+4. Composer installed on the server
+5. Access to Active Directory/LDAP server
+6. Microsoft Web Platform Installer (optional, but helpful)
 
-   ```
-   php artisan key:generate
-   ```
-9. Run database migrations:
+### Installation Steps
 
-   ```
-   php artisan migrate
-   ```
-10. Set the appropriate permissions on the storage and bootstrap/cache directories.
-11. In IIS Manager, create a new website or application pointing to the public directory of your Laravel application.
-12. Set up a new application pool for your website with "No Managed Code" as the .NET CLR version.
-13. In your project's public folder, create a new web.config file with the following content:
+1. **Prepare your server:**
+   - Ensure IIS is installed with the necessary components: CGI, URL Rewrite
+   - Install PHP for IIS (PHP 8.2+)
+   - Configure PHP to work with IIS
 
-    ```xml
-    <?xml version="1.0" encoding="UTF-8"?>
-    <configuration>
-        <system.webServer>
-            <rewrite>
-                <rules>
-                    <rule name="Imported Rule 1" stopProcessing="true">
-                        <match url="^(.*)/$" ignoreCase="false" />
-                        <conditions>
-                            <add input="{REQUEST_FILENAME}" matchType="IsDirectory" ignoreCase="false" negate="true" />
-                        </conditions>
-                        <action type="Redirect" redirectType="Permanent" url="/{R:1}" />
-                    </rule>
-                    <rule name="Imported Rule 2" stopProcessing="true">
-                        <match url="^" ignoreCase="false" />
-                        <conditions>
-                            <add input="{REQUEST_FILENAME}" matchType="IsDirectory" ignoreCase="false" negate="true" />
-                            <add input="{REQUEST_FILENAME}" matchType="IsFile" ignoreCase="false" negate="true" />
-                        </conditions>
-                        <action type="Rewrite" url="index.php" />
-                    </rule>
-                </rules>
-            </rewrite>
-        </system.webServer>
-    </configuration>
-    ```
-14. Modify your application's `public/.htaccess` file to include IIS-specific rules:
+2. **Deploy the application:**
+   - Clone or copy the application files to a directory on the server (e.g., C:\inetpub\wwwroot\lci-lookup)
+   - Open a command prompt, navigate to the application directory, and run:
+     ```
+     composer install --no-dev
+     ```
+   - Copy the `.env.example` file to `.env` and update it with your server's configuration:
+     ```
+     php -r "copy('.env.example', '.env');"
+     ```
 
-    ```apache
-    <IfModule mod_rewrite.c>
-        <IfModule mod_negotiation.c>
-            Options -MultiViews -Indexes
-        </IfModule>
+3. **Configure the application:**
+   - Edit the `.env` file and set the following LDAP parameters:
+     ```
+     LDAP_CONNECTION=default
+     LDAP_HOST=your-ldap-server.domain.com
+     LDAP_USERNAME=cn=service-account,dc=domain,dc=com
+     LDAP_PASSWORD=your-service-account-password
+     LDAP_PORT=389
+     LDAP_BASE_DN=dc=domain,dc=com
+     LDAP_SSL=false
+     LDAP_TLS=false
+     ```
+   - Generate the application key:
+     ```
+     php artisan key:generate
+     ```
+   - Run database migrations:
+     ```
+     php artisan migrate
+     ```
+   - Set appropriate permissions on the storage and bootstrap/cache directories
+   - Set file permissions to allow IIS to read and write to necessary directories
 
-        RewriteEngine On
+4. **Configure IIS:**
+   - Create a new website in IIS Manager pointing to the public directory of your Laravel application
+   - Set up a new application pool:
+     - .NET CLR version: "No Managed Code"
+     - Managed pipeline mode: "Integrated"
+     - Identity: ApplicationPoolIdentity (or a specific domain account with necessary permissions)
+   - Enable Windows Authentication and disable Anonymous Authentication:
+     - Select your website in IIS Manager
+     - Double-click on the "Authentication" icon
+     - Disable "Anonymous Authentication"
+     - Enable "Windows Authentication"
 
-        # Redirect Trailing Slashes If Not A Folder...
-        RewriteCond %{REQUEST_FILENAME} !-d
-        RewriteCond %{REQUEST_URI} (.+)/$
-        RewriteRule ^ %1 [L,R=301]
+5. **The web.config file:**
+   - The `public/web.config` file is already configured with the necessary settings:
+     - URL rewrite rules
+     - Windows authentication settings
+     - PHP FastCGI handler
 
-        # Handle Front Controller...
-        RewriteCond %{REQUEST_FILENAME} !-d
-        RewriteCond %{REQUEST_FILENAME} !-f
-        RewriteRule ^ index.php [L]
-    </IfModule>
+6. **Test the deployment:**
+   - Access your application through a web browser
+   - You should be automatically authenticated via your Windows credentials
+   - If authentication fails, check the Laravel logs for detailed error messages
 
-    # IIS Specific Rules
-    <IfModule mod_rewrite.c>
-        RewriteEngine On
-        RewriteRule ^(.*)$ public/$1 [L]
-    </IfModule>
-    ```
-15. Restart the IIS server.
+### Troubleshooting
 
-These modifications should allow your Laravel application to run on IIS. However, you may need to troubleshoot and make further adjustments based on your specific server configuration and application requirements.
+1. **Authentication Issues:**
+   - Ensure Windows Authentication is properly enabled in IIS
+   - Check the `.env` file for correct LDAP configuration
+   - Verify the LDAP service account has read permissions in your Active Directory
+   - Check Laravel logs at `storage/logs/laravel.log`
 
-For more detailed instructions or troubleshooting, please consult the Laravel documentation on deployment or contact the IT support team.
+2. **IIS Configuration:**
+   - Make sure the URL Rewrite module is installed
+   - Verify that PHP is properly configured with IIS
+   - Check file permissions on the application directories
+
+3. **Application Errors:**
+   - Check PHP error logs
+   - Enable debugging in `.env` by setting `APP_DEBUG=true` temporarily
+   - Run `php artisan optimize:clear` to clear cached configuration
+
+4. **LDAP Connection Issues:**
+   - Test LDAP connectivity from the server using tools like LDP.exe
+   - Verify firewall rules allow LDAP traffic (typically port 389 or 636 for LDAPS)
+   - Confirm the LDAP service account has the necessary permissions
 
 ## Security
 
-This application is for internal use only. Do not share access or data with unauthorized individuals.
+This application is for internal use only and utilizes Windows Authentication with LDAP integration to ensure secure access. Do not share access or data with unauthorized individuals.
+
+For more detailed instructions or troubleshooting, please consult the Laravel documentation on deployment or contact the IT support team.

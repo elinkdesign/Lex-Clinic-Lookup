@@ -1,3 +1,10 @@
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  email_verified_at?: string;
+}
+
 export interface SearchResult {
   NID: string;
   LIC: string;
@@ -12,4 +19,16 @@ export interface FormData {
 
 export interface Errors {
   [key: string]: string;
+}
+
+export interface PageProps {
+  auth: {
+    user: User;
+  };
+  ziggy: {
+    location: string;
+    [key: string]: unknown;
+  };
+  errors: Errors;
+  [key: string]: unknown;
 } 
