@@ -23,14 +23,17 @@ createServer((page) =>
             // @ts-expect-error
             global.route<RouteName> = (name, params, absolute) => {
                 const ziggyProps = (page.props as PageProps).ziggy;
-                const { location, ...rest } = ziggyProps;
-                const ziggy: Config = {
-                    url: location,
-                    port: null,
-                    defaults: {},
-                    routes: {},
-                    ...rest
-                };
+                const { location, ...rawConfig } = ziggyProps;
+                const ziggy = Object.assign<Partial<Config>, Partial<Config>>(
+                    {
+                        url: location,
+                        port: null,
+                        defaults: {},
+                        routes: {},
+                    },
+                    rawConfig as Partial<Config>,
+                ) as Config;
+
                 return route(name, params as any, absolute, ziggy);
             };
             /* eslint-enable */
