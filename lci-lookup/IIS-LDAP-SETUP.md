@@ -2,6 +2,12 @@
 
 This guide provides step-by-step instructions for deploying the LCI Lookup Tool on IIS with LDAP/Active Directory authentication.
 
+## Access Control
+
+The application is configured to require membership in the Active Directory group: **`g-app-webapp-cpdrlist`**
+
+Users who authenticate via LDAP but are not members of this group will receive a 403 Forbidden error with the message "Access denied. You must be a member of the g-app-webapp-cpdrlist group."
+
 ## Prerequisites
 Get-WebConfiguration -Filter "system.webServer/fastCgi/application" | Where-Object {$_.fullPath -like "*php*"} | ForEach-Object { Remove-WebConfigurationProperty -Filter "system.webServer/fastCgi" -Name "." -AtElement @{fullPath=$_.fullPath} }
 ### Server Requirements
