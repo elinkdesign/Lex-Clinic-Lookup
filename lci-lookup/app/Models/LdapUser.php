@@ -22,7 +22,7 @@ class LdapUser extends Model implements Authenticatable
     protected ?string $connection = 'default';
 
     // The attributes that should be hidden for arrays
-    protected $hidden = [
+    protected array $hidden = [
         'userpassword',
         'unicodepwd',
     ];
