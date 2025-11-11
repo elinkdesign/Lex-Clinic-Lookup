@@ -61,7 +61,7 @@ return [
 
     'providers' => [
         'users' => [
-            'driver' => 'eloquent',
+            'driver' => 'session',
             'model' => App\Models\SessionUser::class,
         ],
 

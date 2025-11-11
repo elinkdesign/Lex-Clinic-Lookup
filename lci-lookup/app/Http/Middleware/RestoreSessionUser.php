@@ -39,7 +39,7 @@ class RestoreSessionUser
 
         if (is_array($userData)) {
             $sessionUser = new SessionUser($userData);
-            Auth::login($sessionUser);
+            Auth::setUser($sessionUser);
             \Log::info('RestoreSessionUser: User restored successfully', [
                 'path' => $request->path(),
                 'user' => Auth::user()->samaccountname ?? 'unknown',
