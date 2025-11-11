@@ -153,21 +153,22 @@ class WindowsAuthController extends Controller
 
             $sessionPayload = $this->mapLdapEntryToSessionUser($userEntry);
             $sessionUser = new SessionUser($sessionPayload);
-            $request->session()->regenerate();
+            
+            // Store additional metadata in session
             $request->session()->put('auth.user', $sessionPayload);
             $request->session()->put('auth.username', $normalized['username']);
             $request->session()->put('auth.domain', $normalized['domain']);
             $request->session()->put('auth.guid', $sessionUser->getAuthIdentifier());
-            Auth::setUser($sessionUser);
-
-            // Force session save before redirect
-            $request->session()->save();
+            
+            // Use Auth::login() to properly register the user with Laravel's auth system
+            Auth::login($sessionUser);
 
             \Log::info('WindowsAuth: Authentication successful, redirecting', [
                 'auth_identifier' => $sessionUser->getAuthIdentifier(),
                 'session_id' => $request->session()->getId(),
                 'redirect_to' => route('home'),
                 'user' => $normalized['username'],
+                'auth_check' => Auth::check(),
             ]);
 
             return redirect()->intended(route('home'));
