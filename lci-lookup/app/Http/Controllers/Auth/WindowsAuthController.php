@@ -151,9 +151,10 @@ class WindowsAuthController extends Controller
                 ])->onlyInput('username');
             }
 
-            $sessionUser = new SessionUser($userEntry);
+            $sessionPayload = $this->mapLdapEntryToSessionUser($userEntry);
+            $sessionUser = new SessionUser($sessionPayload);
             $request->session()->regenerate();
-            $request->session()->put('auth.user', $userEntry);
+            $request->session()->put('auth.user', $sessionPayload);
             $request->session()->put('auth.username', $normalized['username']);
             $request->session()->put('auth.domain', $normalized['domain']);
             $request->session()->put('auth.guid', $sessionUser->getAuthIdentifier());
@@ -283,5 +284,101 @@ class WindowsAuthController extends Controller
             ')' => '\\29',
             "\0" => '\\00',
         ]);
+    }
+
+    /**
+     * Reduce the raw LDAP entry to a session-friendly payload.
+     *
+     * @param  array<string, mixed>  $entry
+     * @return array<string, mixed>
+     */
+    private function mapLdapEntryToSessionUser(array $entry): array
+    {
+        return [
+            'cn' => $this->extractFirstAttribute($entry, 'cn'),
+            'displayname' => $this->extractFirstAttribute($entry, 'displayname'),
+            'samaccountname' => $this->extractFirstAttribute($entry, 'samaccountname'),
+            'mail' => $this->extractFirstAttribute($entry, 'mail'),
+            'userprincipalname' => $this->extractFirstAttribute($entry, 'userprincipalname'),
+            'givenname' => $this->extractFirstAttribute($entry, 'givenname'),
+            'sn' => $this->extractFirstAttribute($entry, 'sn'),
+            'objectguid' => $this->encodeGuid($this->extractFirstAttribute($entry, 'objectguid')),
+            'memberof' => $this->normalizeMemberOf($entry['memberof'] ?? []),
+        ];
+    }
+
+    /**
+     * Safely extract the first value for a given attribute from an LDAP entry.
+     *
+     * @param  array<string, mixed>  $entry
+     */
+    private function extractFirstAttribute(array $entry, string $attribute): ?string
+    {
+        if (! isset($entry[$attribute])) {
+            return null;
+        }
+
+        $value = $entry[$attribute];
+
+        if (is_array($value)) {
+            if (isset($value[0]) && is_string($value[0])) {
+                return $value[0];
+            }
+
+            return null;
+        }
+
+        return is_string($value) ? $value : null;
+    }
+
+    /**
+     * Normalise the memberOf attribute to an indexed array of strings.
+     *
+     * @param  mixed  $memberOf
+     * @return array<int, string>
+     */
+    private function normalizeMemberOf(mixed $memberOf): array
+    {
+        if (is_array($memberOf)) {
+            $values = [];
+
+            if (isset($memberOf['count'])) {
+                $count = (int) $memberOf['count'];
+
+                for ($i = 0; $i < $count; $i++) {
+                    if (isset($memberOf[$i]) && is_string($memberOf[$i]) && $memberOf[$i] !== '') {
+                        $values[] = $memberOf[$i];
+                    }
+                }
+
+                return $values;
+            }
+
+            foreach ($memberOf as $value) {
+                if (is_string($value) && $value !== '') {
+                    $values[] = $value;
+                }
+            }
+
+            return $values;
+        }
+
+        if (is_string($memberOf) && $memberOf !== '') {
+            return [$memberOf];
+        }
+
+        return [];
+    }
+
+    /**
+     * Convert the binary GUID returned by LDAP to a hex string.
+     */
+    private function encodeGuid(?string $guid): ?string
+    {
+        if ($guid === null || $guid === '') {
+            return null;
+        }
+
+        return bin2hex($guid);
     }
 }

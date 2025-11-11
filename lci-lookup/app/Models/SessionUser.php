@@ -42,9 +42,23 @@ class SessionUser implements Authenticatable
 
     public function getAuthIdentifier()
     {
-        $guid = $this->attributes['objectguid'][0] ?? $this->attributes['objectguid'] ?? null;
-        $samaccount = $this->attributes['samaccountname'][0] ?? $this->attributes['samaccountname'] ?? null;
-        return $guid ?? $samaccount ?? null;
+        $guid = $this->attributes['objectguid'] ?? null;
+
+        if (is_array($guid)) {
+            $guid = $guid[0] ?? null;
+        }
+
+        if (is_string($guid) && $guid !== '') {
+            return $guid;
+        }
+
+        $samaccount = $this->attributes['samaccountname'] ?? null;
+
+        if (is_array($samaccount)) {
+            $samaccount = $samaccount[0] ?? null;
+        }
+
+        return $samaccount ?? null;
     }
 
     public function getAuthPassword()
