@@ -1,122 +1,104 @@
-import Checkbox from '@/Components/Checkbox';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { Head } from '@inertiajs/react';
+import { useState } from 'react';
 
-export default function Login({
-    status,
-    canResetPassword,
-}: {
-    status?: string;
-    canResetPassword: boolean;
-}) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        email: '',
-        password: '',
-        remember: false,
-    });
+export default function Login() {
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
-
-        post(route('login'), {
-            onFinish: () => reset('password'),
-        });
+    const handleWindowsAuth = async () => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const response = await fetch('/windows-auth', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                credentials: 'include',
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.redirect) {
+                window.location.href = data.redirect;
+            } else {
+                setError(data.message || 'Authentication failed. Please try again.');
+                setIsLoading(false);
+            }
+        } catch (err) {
+            setError('An error occurred. Please make sure you are on the company network and try again.');
+            setIsLoading(false);
+        }
     };
 
     return (
-        <GuestLayout>
-            <Head title="Log in" />
+        <>
+            <Head title="Login - NID Lookup" />
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+                <div className="w-full max-w-md">
+                    {/* Card */}
+                    <div className="bg-white rounded-lg shadow-xl p-8">
+                        {/* Logo */}
+                        <div className="flex justify-center mb-8">
+                            <img 
+                                src="/Lex-Clinic-logo.webp" 
+                                alt="Lexington Clinic Logo"
+                                className="h-20 object-contain"
+                            />
+                        </div>
 
-            {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
+                        {/* Title */}
+                        <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
+                            NID Lookup Tool
+                        </h1>
+                        <p className="text-center text-gray-600 mb-8">
+                            Sign in with your company credentials
+                        </p>
 
-            <div className="mb-6 text-center">
-                <Link
-                    href={route('windows.auth')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                    Sign in with Windows Authentication
-                </Link>
-            </div>
-            
-            <div className="mb-4 flex items-center">
-                <div className="flex-grow h-px bg-gray-300"></div>
-                <div className="mx-4 text-gray-500 text-sm">OR</div>
-                <div className="flex-grow h-px bg-gray-300"></div>
-            </div>
+                        {/* Error Message */}
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-sm text-red-700">{error}</p>
+                            </div>
+                        )}
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
-                        id="email"
-                        type="email"
-                        name="email"
-                        value={data.email}
-                        className="mt-1 block w-full"
-                        autoComplete="username"
-                        isFocused={true}
-                        onChange={(e) => setData('email', e.target.value)}
-                    />
-
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="current-password"
-                        onChange={(e) => setData('password', e.target.value)}
-                    />
-
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4 block">
-                    <label className="flex items-center">
-                        <Checkbox
-                            name="remember"
-                            checked={data.remember}
-                            onChange={(e) =>
-                                setData('remember', e.target.checked)
-                            }
-                        />
-                        <span className="ms-2 text-sm text-gray-600">
-                            Remember me
-                        </span>
-                    </label>
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
-                    {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        {/* Windows Auth Button */}
+                        <button
+                            onClick={handleWindowsAuth}
+                            disabled={isLoading}
+                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-lg transition duration-200 flex items-center justify-center gap-2"
                         >
-                            Forgot your password?
-                        </Link>
-                    )}
+                            {isLoading ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Signing in...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path>
+                                    </svg>
+                                    Sign in with Windows Authentication
+                                </>
+                            )}
+                        </button>
 
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Log in
-                    </PrimaryButton>
+                        {/* Helper Text */}
+                        <p className="text-center text-gray-500 text-sm mt-6">
+                            Make sure you are connected to the company network or VPN
+                        </p>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="text-center mt-8 text-gray-600 text-sm">
+                        <p>© Lexington Clinic</p>
+                    </div>
                 </div>
-            </form>
-        </GuestLayout>
+            </div>
+        </>
     );
 }

@@ -48,7 +48,7 @@ class LdapUser extends Model implements Authenticatable
      */
     public function getAuthPassword(): string
     {
-        return $this->getFirstAttribute('userpassword');
+        return '';
     }
 
     /**

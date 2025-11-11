@@ -20,7 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'ad.group' => \App\Http\Middleware\CheckAdGroup::class,
         ]);
 
-        //
+        // Prepend RestoreSessionUser so it runs after StartSession
+        // but before any other web middleware that might check Auth::check()
+        $middleware->web(prepend: [
+            \App\Http\Middleware\RestoreSessionUser::class,
+        ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

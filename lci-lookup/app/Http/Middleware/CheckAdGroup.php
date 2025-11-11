@@ -17,15 +17,30 @@ class CheckAdGroup
     public function handle(Request $request, Closure $next): Response
     {
         $user = Auth::user();
+        
+        \Log::info("CheckAdGroup Middleware - User Check", [
+            'auth_check' => Auth::check(),
+            'user' => $user ? $user->samaccountname : null,
+            'has_memberof' => $user ? isset($user->memberof) : false,
+        ]);
 
         if (!$user) {
+            \Log::warning("CheckAdGroup Middleware - No user found, redirecting to login");
             return redirect()->route('login');
         }
 
         // Check if user has the required AD group
         if (!$this->userInGroup($user, 'g-app-webapp-cpdrlist')) {
+            \Log::warning("Access denied for user", [
+                'user' => $user->samaccountname ?? $user,
+                'memberof' => $user->memberof ?? null,
+            ]);
             abort(403, 'Access denied. You must be a member of the g-app-webapp-cpdrlist group.');
         }
+        
+        \Log::info("CheckAdGroup Middleware - Access granted for user", [
+            'user' => $user->samaccountname ?? $user,
+        ]);
 
         return $next($request);
     }
