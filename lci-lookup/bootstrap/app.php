@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+        ]);
+
+        // Prepend RestoreSessionUser so it runs early, before route middleware
+        $middleware->web(prepend: [
             \App\Http\Middleware\RestoreSessionUser::class,
         ]);
 

@@ -18,16 +18,6 @@ class RestoreSessionUser
             return $next($request);
         }
 
-        // Don't restore session on guest routes (login, register, etc.)
-        // to prevent redirect loops with the guest middleware
-        if ($this->isGuestRoute($request)) {
-            \Log::info('RestoreSessionUser: Skipping guest route', [
-                'path' => $request->path(),
-                'route' => $request->route()?->getName(),
-            ]);
-            return $next($request);
-        }
-
         // Check if user already authenticated in session
         if (Auth::check()) {
             \Log::info('RestoreSessionUser: User already authenticated', [
@@ -41,13 +31,15 @@ class RestoreSessionUser
 
         \Log::info('RestoreSessionUser: Attempting to restore user', [
             'path' => $request->path(),
+            'route' => $request->route()?->getName(),
             'session_id' => $request->session()->getId(),
             'has_auth_user' => is_array($userData),
             'auth_user_keys' => is_array($userData) ? array_keys($userData) : null,
         ]);
 
         if (is_array($userData)) {
-            Auth::setUser(new SessionUser($userData));
+            $sessionUser = new SessionUser($userData);
+            Auth::login($sessionUser);
             \Log::info('RestoreSessionUser: User restored successfully', [
                 'path' => $request->path(),
                 'user' => Auth::user()->samaccountname ?? 'unknown',
