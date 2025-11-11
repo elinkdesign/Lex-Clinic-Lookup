@@ -152,11 +152,15 @@ class WindowsAuthController extends Controller
             }
 
             $sessionUser = new SessionUser($userEntry);
-            Auth::login($sessionUser);
             $request->session()->regenerate();
+            $request->session()->put('auth.user', $userEntry);
+            $request->session()->put('auth.username', $normalized['username']);
+            $request->session()->put('auth.domain', $normalized['domain']);
+            $request->session()->put('auth.guid', $sessionUser->getAuthIdentifier());
+            Auth::setUser($sessionUser);
 
             Log::channel('windows_auth')->info('Authentication successful', array_merge($logContext, [
-                'auth_check' => Auth::check(),
+                'auth_identifier' => $sessionUser->getAuthIdentifier(),
             ]));
 
             return redirect()->intended(route('home'));
