@@ -23,7 +23,7 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
-    Route::get('windows-auth', [WindowsAuthController::class, 'authenticate'])
+    Route::post('windows-auth', [WindowsAuthController::class, 'authenticate'])
         ->name('windows.auth');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
