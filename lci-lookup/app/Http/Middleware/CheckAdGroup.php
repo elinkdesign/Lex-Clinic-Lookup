@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SessionUser;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,16 +18,45 @@ class CheckAdGroup
     public function handle(Request $request, Closure $next): Response
     {
         $user = Auth::user();
-        
+
+        if (!$user && $request->session()->has('auth.user')) {
+            $restoredUser = new SessionUser($request->session()->get('auth.user'));
+            Auth::setUser($restoredUser);
+            $user = $restoredUser;
+            \Log::info("CheckAdGroup Middleware - Session user restored from payload", [
+                'session_id' => $request->session()->getId(),
+            ]);
+        }
+
         \Log::info("CheckAdGroup Middleware - User Check", [
             'auth_check' => Auth::check(),
-            'user' => $user ? $user->samaccountname : null,
+            'user' => $user ? ($user->samaccountname ?? null) : null,
             'has_memberof' => $user ? isset($user->memberof) : false,
         ]);
 
         if (!$user) {
-            \Log::warning("CheckAdGroup Middleware - No user found, redirecting to login");
-            return redirect()->route('login');
+            \Log::warning("CheckAdGroup Middleware - No user found after restore attempt, redirecting to login", [
+                'session_has_auth_user' => $request->session()->has('auth.user'),
+                'session_id' => $request->session()->getId(),
+            ]);
+
+            Auth::logout();
+
+            $request->session()->forget([
+                'auth.user',
+                'auth.username',
+                'auth.domain',
+                'auth.guid',
+            ]);
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()
+                ->route('login')
+                ->withErrors([
+                    'auth' => 'Your session expired. Please sign in again.',
+                ]);
         }
 
         // Check if user has the required AD group
