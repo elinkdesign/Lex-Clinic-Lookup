@@ -157,6 +157,10 @@ class WindowsAuthController extends Controller
         }
 
         foreach ($user->memberof as $group) {
+            if (!is_string($group)) {
+                continue;
+            }
+
             if (stripos($group, $groupName) !== false) {
                 return true;
             }
