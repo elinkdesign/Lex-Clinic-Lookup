@@ -20,8 +20,11 @@ class RestoreSessionUser
         }
         
         // Try to get authenticated user from Apache/Windows Auth headers
-        $username = $request->server('PHP_AUTH_USER');
+        $rawUsername = $request->server('PHP_AUTH_USER');
         $password = $request->server('PHP_AUTH_PW');
+        $parsed = $this->normalizeUsername($rawUsername);
+        $username = $parsed['username'];
+        $domain = $parsed['domain'] ?? env('LDAP_DOMAIN', 'LC');
         
         if ($username && $password) {
             \Log::info('🔵 Found Windows Auth credentials in headers, restoring user', [
@@ -44,7 +47,7 @@ class RestoreSessionUser
                 ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
                 
                 // Verify credentials
-                $userDn = "LC\\" . $username;
+                $userDn = "{$domain}\\{$username}";
                 $bind = @ldap_bind($ldap, $userDn, $password);
                 
                 if (!$bind) {
@@ -82,5 +85,27 @@ class RestoreSessionUser
         }
         
         return $next($request);
+    }
+
+    /**
+     * Normalize username forms such as LC\user or user@domain.
+     */
+    private function normalizeUsername(?string $username): array
+    {
+        if (!$username) {
+            return ['domain' => null, 'username' => null];
+        }
+
+        if (str_contains($username, '\\')) {
+            [$domain, $name] = explode('\\', $username, 2);
+            return ['domain' => strtoupper($domain), 'username' => $name];
+        }
+
+        if (str_contains($username, '@')) {
+            [$name, $domain] = explode('@', $username, 2);
+            return ['domain' => strtoupper(strtok($domain, '.')), 'username' => $name];
+        }
+
+        return ['domain' => null, 'username' => $username];
     }
 }

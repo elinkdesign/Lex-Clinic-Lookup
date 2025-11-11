@@ -18,13 +18,16 @@ class WindowsAuthController extends Controller
     public function authenticate(Request $request)
     {
         // Get authenticated username and password from Apache basic auth
-        $username = $request->server('PHP_AUTH_USER');
+        $rawUsername = $request->server('PHP_AUTH_USER');
         $password = $request->server('PHP_AUTH_PW');
+        $parsed = $this->normalizeUsername($rawUsername);
+        $username = $parsed['username'];
+        $domain = $parsed['domain'] ?? env('LDAP_DOMAIN', 'LC');
         
         Log::info('=== Windows Auth Debug ===', [
             'AUTH_USER' => $request->server('AUTH_USER'),
             'REMOTE_USER' => $request->server('REMOTE_USER'),
-            'PHP_AUTH_USER' => $username,
+            'PHP_AUTH_USER' => $rawUsername,
             'resolved_username' => $username,
         ]);
         
@@ -49,7 +52,7 @@ class WindowsAuthController extends Controller
             ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
             
             // Attempt to bind as the user with their credentials
-            $userDn = "LC\\" . $username;
+            $userDn = "{$domain}\\{$username}";
             $bind = @ldap_bind($ldap, $userDn, $password);
             
             if (!$bind) {
@@ -154,5 +157,30 @@ class WindowsAuthController extends Controller
             }
         }
         return false;
+    }
+
+    /**
+     * Normalizes a username coming from Basic Auth headers. Handles forms:
+     *  - LC\username
+     *  - username@domain
+     *  - username
+     */
+    private function normalizeUsername(?string $username): array
+    {
+        if (!$username) {
+            return ['domain' => null, 'username' => null];
+        }
+
+        if (str_contains($username, '\\')) {
+            [$domain, $name] = explode('\\', $username, 2);
+            return ['domain' => strtoupper($domain), 'username' => $name];
+        }
+
+        if (str_contains($username, '@')) {
+            [$name, $domain] = explode('@', $username, 2);
+            return ['domain' => strtoupper(strtok($domain, '.')), 'username' => $name];
+        }
+
+        return ['domain' => null, 'username' => $username];
     }
 }

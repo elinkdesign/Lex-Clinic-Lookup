@@ -8,6 +8,7 @@
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    RewriteRule .* - [E=PHP_AUTH_USER:%{LA-U:REMOTE_USER},E=PHP_AUTH_PW:%{LA-U:REMOTE_PASS}]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
