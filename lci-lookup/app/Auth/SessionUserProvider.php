@@ -13,8 +13,18 @@ class SessionUserProvider implements UserProvider
      */
     public function retrieveById($identifier)
     {
-        // We don't retrieve from database, return null
-        // The user will be restored from session by RestoreSessionUser middleware
+        // Retrieve user from session
+        $userData = session('auth.user');
+        
+        if (is_array($userData)) {
+            $user = new SessionUser($userData);
+            
+            // Verify the identifier matches
+            if ($user->getAuthIdentifier() === $identifier) {
+                return $user;
+            }
+        }
+        
         return null;
     }
 
