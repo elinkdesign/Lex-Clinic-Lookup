@@ -17,6 +17,11 @@ class CheckAdGroup
      */
     public function handle(Request $request, Closure $next): Response
     {
+        \Log::info("CheckAdGroup Middleware - Entry", [
+            'path' => $request->path(),
+            'session_id' => $request->session()->getId(),
+        ]);
+
         $user = Auth::user();
 
         if (!$user && $request->session()->has('auth.user')) {
@@ -29,6 +34,7 @@ class CheckAdGroup
         }
 
         \Log::info("CheckAdGroup Middleware - User Check", [
+            'path' => $request->path(),
             'auth_check' => Auth::check(),
             'user' => $user ? ($user->samaccountname ?? null) : null,
             'has_memberof' => $user ? isset($user->memberof) : false,

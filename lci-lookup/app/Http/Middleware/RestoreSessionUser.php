@@ -65,7 +65,7 @@ class RestoreSessionUser
         $guestRoutes = [
             'login',
             'register',
-            'windows-auth',
+            'windows.auth',
             'password.request',
             'password.email',
             'password.reset',
