@@ -8,8 +8,11 @@ export default function Login() {
     const handleWindowsAuth = async () => {
         setIsLoading(true);
         setError(null);
+
+        console.info('[Login] Windows auth button clicked');
         
         try {
+            console.info('[Login] Sending request to /windows-auth');
             const response = await fetch('/windows-auth', {
                 method: 'GET',
                 headers: {
@@ -17,16 +20,41 @@ export default function Login() {
                 },
                 credentials: 'include',
             });
+
+            console.info('[Login] Response received', {
+                status: response.status,
+                statusText: response.statusText,
+                redirected: response.redirected,
+                url: response.url,
+                contentType: response.headers.get('content-type'),
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('[Login] Non-OK response body', text);
+                throw new Error(`Request failed with status ${response.status}`);
+            }
             
-            const data = await response.json();
+            let data: { success?: boolean; redirect?: string; message?: string } = {};
+
+            try {
+                data = await response.json();
+                console.info('[Login] Parsed JSON payload', data);
+            } catch (jsonError) {
+                console.error('[Login] Failed to parse JSON response', jsonError);
+                throw new Error('Invalid response payload from server.');
+            }
             
             if (data.success && data.redirect) {
+                console.info('[Login] Authentication success; redirecting', data.redirect);
                 window.location.href = data.redirect;
             } else {
+                console.warn('[Login] Authentication response missing redirect or success flag', data);
                 setError(data.message || 'Authentication failed. Please try again.');
                 setIsLoading(false);
             }
         } catch (err) {
+            console.error('[Login] Authentication request threw an error', err);
             setError('An error occurred. Please make sure you are on the company network and try again.');
             setIsLoading(false);
         }
