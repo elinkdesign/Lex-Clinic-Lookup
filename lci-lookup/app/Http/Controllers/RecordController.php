@@ -62,7 +62,7 @@ class RecordController extends Controller
     public function search(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'searchTerm' => ['required', 'string', 'max:255'],
+            'query' => ['required', 'string', 'max:255'],
             'searchType' => ['nullable', 'in:legacy_id,npi'],
         ]);
 
@@ -70,12 +70,12 @@ class RecordController extends Controller
             throw new ValidationException($validator);
         }
 
-        $searchTerm = trim($request->input('searchTerm'));
+        $query = trim($request->input('query'));
         $searchType = $request->input('searchType', 'legacy_id');
 
         $column = $searchType === 'legacy_id' ? '[Provider Legacy ID]' : '[Provider NPI]';
 
-        $result = $this->lookupByColumn(self::LONG_LIST_TABLE, $column, $searchTerm);
+        $result = $this->lookupByColumn(self::LONG_LIST_TABLE, $column, $query);
 
         return response()->json([
             'success' => true,
