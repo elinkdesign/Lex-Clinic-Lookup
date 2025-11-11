@@ -112,6 +112,22 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'corepoint' => [
+            'driver' => 'sqlsrv',
+            'host' => env('COREPOINT_DB_HOST', 'sbwebapp-01'),
+            'port' => env('COREPOINT_DB_PORT', '1433'),
+            'database' => env('COREPOINT_DB_DATABASE', 'Corepoint'),
+            'username' => env('COREPOINT_DB_USERNAME', ''),
+            'password' => env('COREPOINT_DB_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'options' => [
+                // Use Windows Authentication if username is empty
+                PDO::SQLSRV_ATTR_ENCODING => PDO::SQLSRV_ENCODING_UTF8,
+            ],
+        ],
+
     ],
 
     /*
