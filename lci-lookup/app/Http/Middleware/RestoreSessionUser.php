@@ -37,6 +37,8 @@ class RestoreSessionUser
                 $ldapConfig = config('ldap.connections.default');
                 $ldapServer = $ldapConfig['hosts'][0];
                 $ldapPort = $ldapConfig['port'] ?? 389;
+                $serviceUser = env('LDAP_USERNAME', $ldapConfig['username'] ?? null);
+                $servicePass = env('LDAP_PASSWORD', $ldapConfig['password'] ?? null);
                 
                 $ldap = ldap_connect($ldapServer, $ldapPort);
                 if (!$ldap) {
@@ -46,12 +48,15 @@ class RestoreSessionUser
                 ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, 3);
                 ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
                 
-                // Verify credentials
-                $userDn = "{$domain}\\{$username}";
-                $bind = @ldap_bind($ldap, $userDn, $password);
+                if (!$serviceUser || !$servicePass) {
+                    throw new \Exception('LDAP service account credentials not configured');
+                }
+                
+                // Bind with service account
+                $bind = @ldap_bind($ldap, $serviceUser, $servicePass);
                 
                 if (!$bind) {
-                    \Log::warning("LDAP verification failed for user: {$userDn}");
+                    \Log::warning("LDAP service bind failed for restore");
                     ldap_close($ldap);
                     return $next($request);
                 }

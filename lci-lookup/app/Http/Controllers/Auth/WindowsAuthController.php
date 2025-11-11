@@ -19,7 +19,7 @@ class WindowsAuthController extends Controller
     {
         // Get authenticated username and password from Apache basic auth
         $rawUsername = $request->server('PHP_AUTH_USER');
-        $password = $request->server('PHP_AUTH_PW');
+        $password = $request->server('PHP_AUTH_PW'); // not used for binding, but kept to ensure header exists
         $parsed = $this->normalizeUsername($rawUsername);
         $username = $parsed['username'];
         $domain = $parsed['domain'] ?? env('LDAP_DOMAIN', 'LC');
@@ -41,6 +41,8 @@ class WindowsAuthController extends Controller
             $ldapConfig = config('ldap.connections.default');
             $ldapServer = $ldapConfig['hosts'][0];
             $ldapPort = $ldapConfig['port'] ?? 389;
+            $serviceUser = env('LDAP_USERNAME', $ldapConfig['username'] ?? null);
+            $servicePass = env('LDAP_PASSWORD', $ldapConfig['password'] ?? null);
             
             // Connect to LDAP server
             $ldap = ldap_connect($ldapServer, $ldapPort);
@@ -51,17 +53,20 @@ class WindowsAuthController extends Controller
             ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, 3);
             ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
             
-            // Attempt to bind as the user with their credentials
-            $userDn = "{$domain}\\{$username}";
-            $bind = @ldap_bind($ldap, $userDn, $password);
+            if (!$serviceUser || !$servicePass) {
+                throw new \Exception('LDAP service account credentials not configured');
+            }
+            
+            // Bind using service account credentials (Apache already validated the user)
+            $bind = @ldap_bind($ldap, $serviceUser, $servicePass);
             
             if (!$bind) {
-                Log::warning("LDAP Authentication Failed for user: {$userDn}");
+                Log::warning("LDAP service bind failed for account: {$serviceUser}");
                 ldap_close($ldap);
                 return redirect()->route('login')->withErrors(['auth' => 'Invalid credentials.']);
             }
             
-            Log::info("LDAP Bind Successful for user: {$userDn}");
+            Log::info("LDAP service bind successful");
             
             // User authenticated successfully! Search for their full info using the authenticated connection
             $baseDn = config('ldap.connections.default.base_dn');
