@@ -15,6 +15,12 @@ class RestoreSessionUser
             return $next($request);
         }
 
+        // Don't restore session on guest routes (login, register, etc.)
+        // to prevent redirect loops with the guest middleware
+        if ($this->isGuestRoute($request)) {
+            return $next($request);
+        }
+
         // Check if user already authenticated in session
         if (Auth::check()) {
             return $next($request);
@@ -27,5 +33,31 @@ class RestoreSessionUser
         }
 
         return $next($request);
+    }
+
+    /**
+     * Determine if the current request is for a guest route.
+     */
+    private function isGuestRoute(Request $request): bool
+    {
+        $guestRoutes = [
+            'login',
+            'register',
+            'windows-auth',
+            'password.request',
+            'password.email',
+            'password.reset',
+            'password.store',
+        ];
+
+        $currentRoute = $request->route();
+
+        if (!$currentRoute) {
+            return false;
+        }
+
+        $routeName = $currentRoute->getName();
+
+        return in_array($routeName, $guestRoutes, true);
     }
 }
