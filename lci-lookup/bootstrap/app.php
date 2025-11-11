@@ -14,16 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\RestoreSessionUser::class,
         ]);
 
         $middleware->alias([
             'ad.group' => \App\Http\Middleware\CheckAdGroup::class,
-        ]);
-
-        // Prepend RestoreSessionUser so it runs after StartSession
-        // but before any other web middleware that might check Auth::check()
-        $middleware->web(prepend: [
-            \App\Http\Middleware\RestoreSessionUser::class,
         ]);
 
     })

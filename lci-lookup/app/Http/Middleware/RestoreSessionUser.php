@@ -11,6 +11,10 @@ class RestoreSessionUser
 {
     public function handle(Request $request, Closure $next)
     {
+        if (!$request->hasSession()) {
+            return $next($request);
+        }
+
         // Check if user already authenticated in session
         if (Auth::check()) {
             return $next($request);
