@@ -8,15 +8,15 @@ export interface User {
 }
 
 export interface SearchResult {
-    NID: string;
-    LIC: string;
-    name: string;
+    'Provider Legacy ID': string;
+    'Provider NPI': string;
+    'Line Description': string;
 }
 
 export interface FormData {
-    NID: string;
-    LIC: string;
-    name: string;
+    legacy_id: string;
+    npi: string;
+    line_description: string;
 }
 
 export interface Errors {

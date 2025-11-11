@@ -12,9 +12,9 @@ interface WelcomeProps {
 export default function Welcome({ message: initialMessage }: WelcomeProps) {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    NID: '',
-    LIC: '',
-    name: '',
+    legacy_id: '',
+    npi: '',
+    line_description: '',
   });
   const [message, setMessage] = useState(initialMessage);
   const [errors, setErrors] = useState<Errors>({});
@@ -22,7 +22,22 @@ export default function Welcome({ message: initialMessage }: WelcomeProps) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prevData => ({ ...prevData, [name]: value }));
+    
+    // Apply input masks/validation
+    let processedValue = value;
+    
+    if (name === 'legacy_id') {
+      // Max 10 characters, alphanumeric
+      processedValue = value.slice(0, 10).toUpperCase();
+    } else if (name === 'npi') {
+      // Only digits, max 10
+      processedValue = value.replace(/\D/g, '').slice(0, 10);
+    } else if (name === 'line_description') {
+      // Alphanumeric, spaces, and hyphens only, max 50
+      processedValue = value.replace(/[^A-Za-z0-9 -]/g, '').slice(0, 50);
+    }
+    
+    setFormData(prevData => ({ ...prevData, [name]: processedValue }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,7 +48,7 @@ export default function Welcome({ message: initialMessage }: WelcomeProps) {
     try {
       const responseMessage = await submitRecord(formData);
       setMessage(responseMessage);
-      setFormData({ NID: '', LIC: '', name: '' });
+      setFormData({ legacy_id: '', npi: '', line_description: '' });
     } catch (error: any) {
       if (error.response && error.response.data && error.response.data.errors) {
         setErrors(error.response.data.errors);
@@ -43,66 +58,83 @@ export default function Welcome({ message: initialMessage }: WelcomeProps) {
     } finally {
       setIsSubmitting(false);
     }
-    };
+  };
 
-    return (
-        <>
-      <Head title="NID Lookup" />
+  return (
+    <>
+      <Head title="CPDR List Form - NID Lookup" />
       <div className="container">
-        <button 
-          className="search-button"
-          onClick={() => setIsSearchModalOpen(true)}
-        >
-          Search
-        </button>
-        <h1 className="title">NID Lookup</h1>
-        {message && <div className="message">{message}</div>}
-        <form onSubmit={handleSubmit} className="form">
-          <div className="input-group">
-            <label htmlFor="NID" className="label">NID</label>
-            <input
-              type="text"
-              id="NID"
-              name="NID"
-              value={formData.NID}
-              onChange={handleInputChange}
-              className="input"
-            />
-            {errors.NID && <div className="error">{errors.NID}</div>}
-                            </div>
-          <div className="input-group">
-            <label htmlFor="LIC" className="label">LIC</label>
-            <input
-              type="text"
-              id="LIC"
-              name="LIC"
-              value={formData.LIC}
-              onChange={handleInputChange}
-              className="input"
-            />
-            {errors.LIC && <div className="error">{errors.LIC}</div>}
-                                    </div>
-          <div className="input-group">
-            <label htmlFor="name" className="label">Name</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className="input"
-            />
-            {errors.name && <div className="error">{errors.name}</div>}
-                                            </div>
-          <button type="submit" className="submit-button" disabled={isSubmitting}>
-            Submit
+        <div className="header-actions">
+          <button 
+            className="search-button"
+            onClick={() => setIsSearchModalOpen(true)}
+          >
+            Lookup
           </button>
+        </div>
+        
+        <h1 className="title">Provider Legacy ID and NPI List</h1>
+        
+        {message && <div className="message success">{message}</div>}
+        
+        <form onSubmit={handleSubmit} className="form">
+          <div className="form-group">
+            <label htmlFor="legacy-id" className="label">Legacy ID</label>
+            <input
+              type="text"
+              id="legacy-id"
+              name="legacy_id"
+              value={formData.legacy_id}
+              onChange={handleInputChange}
+              className="form-control"
+              maxLength={10}
+              placeholder="Enter Legacy ID"
+            />
+            {errors.legacy_id && <div className="error">{errors.legacy_id}</div>}
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="npi" className="label">NPI</label>
+            <input
+              type="text"
+              id="npi"
+              name="npi"
+              value={formData.npi}
+              onChange={handleInputChange}
+              className="form-control"
+              maxLength={10}
+              placeholder="Enter 10-digit NPI"
+            />
+            {errors.npi && <div className="error">{errors.npi}</div>}
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="line-description" className="label">Line Description</label>
+            <input
+              type="text"
+              id="line-description"
+              name="line_description"
+              value={formData.line_description}
+              onChange={handleInputChange}
+              className="form-control"
+              maxLength={50}
+              placeholder="Enter Line Description"
+            />
+            {errors.line_description && <div className="error">{errors.line_description}</div>}
+          </div>
+          
+          <div className="submit-container">
+            <button type="submit" className="submit-button" disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit'}
+            </button>
+          </div>
         </form>
-                                            </div>
+      </div>
+      
       <SearchModal 
         isOpen={isSearchModalOpen} 
         onClose={() => setIsSearchModalOpen(false)} 
       />
-        </>
-    );
+    </>
+  );
 }

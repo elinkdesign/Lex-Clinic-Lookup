@@ -43,7 +43,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
         try {
             const response = await axios.post('/search', {
-                searchTerm,
+                query: searchTerm,
                 searchType,
             });
 
@@ -51,7 +51,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         } catch (err: any) {
             if (err.response?.status === 422) {
                 const message =
-                    err.response.data.errors?.searchTerm?.join(' ') ||
+                    err.response.data.errors?.query?.join(' ') ||
                     'Validation error. Please check your input.';
                 setError(message);
             } else {
