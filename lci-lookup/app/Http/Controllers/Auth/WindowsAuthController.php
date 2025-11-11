@@ -37,6 +37,12 @@ class WindowsAuthController extends Controller
         }
         
         try {
+            Log::channel('windows_auth')->info('WindowsAuthController.authenticate invoked', [
+                'username' => $username,
+                'session_id' => session()->getId(),
+                'request_id' => $request->headers->get('X-Request-ID'),
+            ]);
+
             // Configure LDAP connection
             $ldapConfig = config('ldap.connections.default');
             $ldapServer = $ldapConfig['hosts'][0];
@@ -47,6 +53,11 @@ class WindowsAuthController extends Controller
             // Connect to LDAP server
             $ldap = ldap_connect($ldapServer, $ldapPort);
             if (!$ldap) {
+                Log::channel('windows_auth')->error('Failed to connect to LDAP server', [
+                    'username' => $username,
+                    'server' => $ldapServer,
+                    'port' => $ldapPort,
+                ]);
                 throw new \Exception('Failed to connect to LDAP server');
             }
             
@@ -54,6 +65,9 @@ class WindowsAuthController extends Controller
             ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
             
             if (!$serviceUser || !$servicePass) {
+                Log::channel('windows_auth')->error('LDAP service account credentials not configured', [
+                    'username' => $username,
+                ]);
                 throw new \Exception('LDAP service account credentials not configured');
             }
             
@@ -66,6 +80,11 @@ class WindowsAuthController extends Controller
                 return redirect()->route('login')->withErrors(['auth' => 'Invalid credentials.']);
             }
             
+            Log::channel('windows_auth')->info('LDAP service bind successful', [
+                'username' => $username,
+                'service_user' => $serviceUser,
+            ]);
+
             Log::info("LDAP service bind successful");
             
             // User authenticated successfully! Search for their full info using the authenticated connection
@@ -73,8 +92,19 @@ class WindowsAuthController extends Controller
             $filter = "(samAccountName={$username})";
             
             $result = @ldap_search($ldap, $baseDn, $filter, ['*', 'memberof']);
+
+            Log::channel('windows_auth')->info('LDAP search executed', [
+                'username' => $username,
+                'filter' => $filter,
+                'result' => $result !== false,
+            ]);
             
             if ($result && ldap_count_entries($ldap, $result) > 0) {
+                Log::channel('windows_auth')->info('LDAP entries found', [
+                    'username' => $username,
+                    'entry_count' => ldap_count_entries($ldap, $result),
+                ]);
+
                 $entries = ldap_get_entries($ldap, $result);
                 $userEntry = $entries[0];
                 
@@ -84,6 +114,11 @@ class WindowsAuthController extends Controller
                     'memberof_count' => isset($userEntry['memberof']) ? (is_array($userEntry['memberof']) ? count($userEntry['memberof']) : 1) : 0,
                     'memberof' => $userEntry['memberof'] ?? null,
                 ]);
+
+                Log::channel('windows_auth')->info('LDAP user entry retrieved', [
+                    'username' => $username,
+                    'raw_entry' => $userEntry,
+                ]);                
                 
                 ldap_close($ldap);
                 
@@ -102,6 +137,10 @@ class WindowsAuthController extends Controller
                         'user' => $username,
                         'memberof' => $ldapUser->memberof ?? null,
                     ]);
+                    Log::channel('windows_auth')->warning('User not in required AD group', [
+                        'username' => $username,
+                        'memberof' => $ldapUser->memberof ?? null,
+                    ]);
                     abort(403, 'Access denied. You must be a member of the g-app-webapp-cpdrlist group.');
                 }
                 
@@ -111,6 +150,11 @@ class WindowsAuthController extends Controller
                 
                 Log::info("Authentication successful and user logged in", [
                     'user' => $username,
+                    'auth_check' => Auth::check(),
+                ]);
+
+                Log::channel('windows_auth')->info('Authentication successful and user logged in', [
+                    'username' => $username,
                     'auth_check' => Auth::check(),
                 ]);
                 
@@ -139,6 +183,10 @@ class WindowsAuthController extends Controller
             
         } catch (\Exception $e) {
             Log::error('Windows Authentication Exception: ' . $e->getMessage());
+            Log::channel('windows_auth')->error('Windows Authentication Exception', [
+                'username' => $username ?? null,
+                'exception' => $e,
+            ]);
             return redirect()->route('login')->withErrors(['auth' => 'Authentication error.']);
         }
     }

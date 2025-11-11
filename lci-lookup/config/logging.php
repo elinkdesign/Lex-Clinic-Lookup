@@ -126,6 +126,11 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
+        'windows_auth' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/windows_auth.log'),
+            'level' => 'debug',
+        ],
 
     ],
 
