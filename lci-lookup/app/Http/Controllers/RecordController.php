@@ -73,7 +73,7 @@ class RecordController extends Controller
         $query = trim($request->input('query'));
         $searchType = $request->input('searchType', 'legacy_id');
 
-        $column = $searchType === 'legacy_id' ? '[Provider Legacy ID]' : '[Provider NPI]';
+        $column = $searchType === 'legacy_id' ? 'Provider Legacy ID' : 'Provider NPI';
 
         $result = $this->lookupByColumn(self::LONG_LIST_TABLE, $column, $query);
 
@@ -129,9 +129,9 @@ class RecordController extends Controller
     {
         return DB::connection(self::SQL_CONNECTION)
             ->table(DB::raw($table))
-            ->select('*')
-            ->where('[Provider Legacy ID]', $legacyId)
-            ->orWhere('[Provider NPI]', $npi)
+            ->select(['Provider Legacy ID', 'Provider NPI', 'Line Description'])
+            ->where('Provider Legacy ID', $legacyId)
+            ->orWhere('Provider NPI', $npi)
             ->get();
     }
 
@@ -155,9 +155,9 @@ class RecordController extends Controller
         DB::connection(self::SQL_CONNECTION)
             ->table(DB::raw($table))
             ->insert([
-                '[Provider Legacy ID]' => $legacyId,
-                '[Provider NPI]' => $npi,
-                '[Line Description]' => $lineDescription,
+                'Provider Legacy ID' => $legacyId,
+                'Provider NPI' => $npi,
+                'Line Description' => $lineDescription,
             ]);
     }
 
@@ -166,8 +166,8 @@ class RecordController extends Controller
         foreach ([self::LONG_LIST_TABLE, self::SHORT_LIST_TABLE] as $table) {
             DB::connection(self::SQL_CONNECTION)
                 ->table(DB::raw($table))
-                ->where('[Provider Legacy ID]', $legacyId)
-                ->orWhere('[Provider NPI]', $npi)
+                ->where('Provider Legacy ID', $legacyId)
+                ->orWhere('Provider NPI', $npi)
                 ->delete();
         }
     }
@@ -191,10 +191,14 @@ class RecordController extends Controller
 
     private function lookupByColumn(string $table, string $column, string $value)
     {
+        $trimmedColumn = $column === 'Provider Legacy ID'
+            ? '[Provider Legacy ID]'
+            : '[Provider NPI]';
+
         return DB::connection(self::SQL_CONNECTION)
             ->table(DB::raw($table))
-            ->select('*')
-            ->where(DB::raw("LTRIM(RTRIM({$column}))"), $value)
+            ->select(['Provider Legacy ID', 'Provider NPI', 'Line Description'])
+            ->whereRaw("LTRIM(RTRIM({$trimmedColumn})) = ?", [$value])
             ->first();
     }
 }

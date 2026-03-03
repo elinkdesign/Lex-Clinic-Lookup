@@ -1,10 +1,10 @@
+import type { PageProps } from '@/types';
 import { createInertiaApp } from '@inertiajs/react';
 import createServer from '@inertiajs/react/server';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import ReactDOMServer from 'react-dom/server';
-import type { RouteName, Config } from 'ziggy-js';
+import type { Config, RouteName } from 'ziggy-js';
 import { route } from '../../vendor/tightenco/ziggy';
-import type { PageProps } from '@/types';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 

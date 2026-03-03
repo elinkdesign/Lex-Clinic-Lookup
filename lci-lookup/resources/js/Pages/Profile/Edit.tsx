@@ -9,10 +9,7 @@ interface EditProps {
     status?: string;
 }
 
-export default function Edit({
-    mustVerifyEmail,
-    status,
-}: EditProps) {
+export default function Edit({ mustVerifyEmail, status }: EditProps) {
     return (
         <AuthenticatedLayout
             header={

@@ -19,6 +19,21 @@ export interface FormData {
     line_description: string;
 }
 
+export interface SubmitRecordPayload extends FormData {
+    delete_existing_records?: boolean;
+}
+
+export interface DuplicateMatches {
+    longList: SearchResult[];
+    shortList: SearchResult[];
+}
+
+export interface ConflictResponse {
+    success: false;
+    message: string;
+    duplicates: DuplicateMatches;
+}
+
 export interface Errors {
     [key: string]: string;
 }
