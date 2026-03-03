@@ -83,6 +83,52 @@ class RecordController extends Controller
         ]);
     }
 
+    public function destroy(Request $request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'legacy_id' => ['required', 'string', 'max:50', 'min:3'],
+                'npi' => ['required', 'string', 'size:10', 'regex:/^\d+$/'],
+                'line_description' => ['nullable', 'string', 'max:255'],
+            ],
+            [
+                'legacy_id.min' => 'Please provide at least 3 characters for Legacy ID.',
+                'npi.size' => 'Please provide a 10 digit NPI.',
+                'npi.regex' => 'NPI may only contain digits.',
+            ]
+        );
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $payload = $validator->validated();
+        $legacyId = $this->sanitizeLegacyId($payload['legacy_id']);
+        $npi = $this->sanitizeNpi($payload['npi']);
+        $lineDescription = trim((string) ($payload['line_description'] ?? ''));
+
+        $matches = $this->lookupByIds(self::LONG_LIST_TABLE, $legacyId, $npi)
+            ->merge($this->lookupByIds(self::SHORT_LIST_TABLE, $legacyId, $npi));
+
+        if ($matches->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No matching records were found to delete.',
+            ], 404);
+        }
+
+        DB::connection(self::SQL_CONNECTION)->transaction(function () use ($legacyId, $npi, $lineDescription) {
+            $this->deleteExistingRecords($legacyId, $npi);
+            $this->logAction('DELETE_ACTION', $legacyId, $npi, $lineDescription);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Record(s) were successfully deleted.',
+        ]);
+    }
+
     private function validatePayload(Request $request): array
     {
         $validator = Validator::make(
@@ -138,12 +184,11 @@ class RecordController extends Controller
     private function insertRecords(string $legacyId, string $npi, string $lineDescription): void
     {
         $isNumeric = ctype_digit($legacyId);
-        $isFourDigitNumeric = $isNumeric && strlen($legacyId) === 4;
         $containsLetters = preg_match('/[A-Za-z]/', $legacyId);
 
         $this->insertRow(self::LONG_LIST_TABLE, $legacyId, $npi, $lineDescription);
 
-        if ($isNumeric && !$isFourDigitNumeric) {
+        if ($isNumeric) {
             $this->insertRow(self::SHORT_LIST_TABLE, $legacyId, $npi, $lineDescription);
         } elseif (!$isNumeric && !$containsLetters) {
             $this->insertRow(self::SHORT_LIST_TABLE, $legacyId, $npi, $lineDescription);

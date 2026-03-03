@@ -19,7 +19,9 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     const [searchType, setSearchType] = useState<SearchType>('legacy_id');
     const [match, setMatch] = useState<MatchRecord | null>(null);
     const [searching, setSearching] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
 
     const resetState = () => {
@@ -27,7 +29,9 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         setSearchType('legacy_id');
         setMatch(null);
         setError(null);
+        setNotice(null);
         setSearching(false);
+        setDeleting(false);
         setHasSearched(false);
     };
 
@@ -38,6 +42,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
     const lookup = async () => {
         setError(null);
+        setNotice(null);
         setMatch(null);
         setSearching(true);
 
@@ -48,10 +53,10 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             });
 
             setMatch(response.data.match ?? null);
-        } catch (err: any) {
-            if (err.response?.status === 422) {
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err) && err.response?.status === 422) {
                 const message =
-                    err.response.data.errors?.query?.join(' ') ||
+                    err.response.data?.errors?.query?.join(' ') ||
                     'Validation error. Please check your input.';
                 setError(message);
             } else {
@@ -60,6 +65,61 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         } finally {
             setSearching(false);
             setHasSearched(true);
+        }
+    };
+
+    const deleteMatch = async () => {
+        if (!match || deleting) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Are you sure you want to delete ${match['Provider Legacy ID']}?`,
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setError(null);
+        setNotice(null);
+        setDeleting(true);
+
+        try {
+            const response = await axios.delete('/delete-record', {
+                data: {
+                    legacy_id: match['Provider Legacy ID'],
+                    npi: match['Provider NPI'],
+                    line_description: match['Line Description'],
+                },
+            });
+
+            setMatch(null);
+            setSearchTerm('');
+            setHasSearched(false);
+            setNotice(
+                response.data?.message ?? 'Item was successfully deleted.',
+            );
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err) && err.response?.status === 404) {
+                setError(
+                    err.response.data?.message ??
+                        'No matching records were found to delete.',
+                );
+            } else if (
+                axios.isAxiosError(err) &&
+                err.response?.status === 422
+            ) {
+                setError(
+                    'Delete validation failed. Please run the lookup again.',
+                );
+            } else {
+                setError(
+                    'Unable to delete the record right now. Please try again.',
+                );
+            }
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -122,6 +182,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                             {error}
                         </div>
                     )}
+                    {notice && (
+                        <div className="mb-4 rounded border border-green-400 bg-green-50 px-3 py-2 text-sm text-green-700">
+                            {notice}
+                        </div>
+                    )}
 
                     <div>
                         {match && (
@@ -138,6 +203,16 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                                     <strong>Line Description:</strong>{' '}
                                     {match['Line Description']}
                                 </p>
+                                <div className="mt-4 text-center">
+                                    <button
+                                        type="button"
+                                        className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
+                                        onClick={deleteMatch}
+                                        disabled={deleting}
+                                    >
+                                        {deleting ? 'Deleting...' : 'Delete'}
+                                    </button>
+                                </div>
                             </div>
                         )}
 

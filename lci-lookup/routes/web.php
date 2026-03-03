@@ -22,6 +22,7 @@ Route::middleware(['auth', 'ad.group'])->group(function () {
 
     Route::post('/submit-record', [RecordController::class, 'store'])->name('record.store');
     Route::post('/search', [RecordController::class, 'search'])->name('record.search');
+    Route::delete('/delete-record', [RecordController::class, 'destroy'])->name('record.destroy');
 });
 
 require __DIR__.'/auth.php';
